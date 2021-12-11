@@ -2,7 +2,8 @@
     "files.associations": {
         "stdio.h": "c",
         "fcntl.h": "c",
-        "time.h": "c"
+        "time.h": "c",
+        "stdint.h": "c"
     },
     "C_Cpp.errorSquiggles": "Disabled"
 }

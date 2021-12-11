@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <fcntl.h>
@@ -48,6 +50,25 @@ int **createMatrix(int rows, int collumns, int **matrix, const char *filePath)
     }
     return mat;
 }
+int countNeighbors(int **a, int row, int collumn, int rows, int collumns)
+{
+    int i, j, count = 0;
+    for (i = row - 1; i <= row + 1; i++)
+    {
+        for (j = collumn - 1; j <= collumn + 1; j++)
+        {
+            if ((i == row && j == collumn) || (i < 0 || j < 0) || (i >= rows || j >= collumns))
+            {
+                continue;
+            }
+            if (a[i][j] == 1)
+            {
+                count++;
+            }
+        }
+    }
+    return count;
+}
 void printToFile(int **matrix, int rows, int collumns, int episodes, double elapsedTime)
 {
     char fileName[50];
@@ -84,7 +105,7 @@ void printToFile(int **matrix, int rows, int collumns, int episodes, double elap
         }
     }
     char totalElapsedTime[40];
-    sprintf(totalElapsedTime, "\nTotal elapsed time:%f", elapsedTime);
+    sprintf(totalElapsedTime, "\nTotal time:%f", elapsedTime);
     if (write(file, totalElapsedTime, strlen(totalElapsedTime)) != strlen(totalElapsedTime))
     {
         printf("Error while writing the elapsed time");
@@ -92,27 +113,24 @@ void printToFile(int **matrix, int rows, int collumns, int episodes, double elap
     }
     close(file);
 }
-void **computeNextMatrix(int **matrix, int **nextMatrix, int rows, int collumns)
+void **computeNextMatrix(int **a, int **b, int row, int col)
 {
-
-    for (int row = 0; row < rows; row++)
+    int i, j, neighbour_live_cell;
+    for (i = 0; i < row; i++)
     {
-        for (int col = 0; col < collumns; col++)
+        for (j = 0; j < col; j++)
         {
-            int neighbors = countNeighbors(matrix, row, col, rows, collumns);
-            int state = matrix[row][col];
-            if (state == 0 && neighbors == 0)
+            neighbour_live_cell = countNeighbors(a, i, j,row,col);
+            if (a[i][j] == 1 && (neighbour_live_cell < 2 || neighbour_live_cell > 3))
             {
-                nextMatrix[row][col] = 1;
+                b[i][j] = 0;
             }
-            else if (state == 1 && neighbors < 2 || neighbors > 3)
+
+            else if (a[i][j] == 0 && neighbour_live_cell == 3)
             {
-                nextMatrix[row][col] = 0;
+                b[i][j] = 1;
             }
-            else
-            {
-                nextMatrix[row][col] = state;
-            }
+ 
         }
     }
 }
@@ -128,25 +146,9 @@ void printMatrix(int **matrix, int rows, int collumns)
         printf("\n");
     }
 }
-
-int countNeighbors(int **matrix, int row, int collumn, int rows, int collumns)
-{
-    int sum = 0;
-    for (int i = -1; i < 2; i++)
-    {
-        for (int j = -1; j < 2; j++)
-        {
-            int computatedRow = (row + i + rows) % rows;
-            int computatedCollumn = (collumn + j + collumns) % collumns;
-            sum += matrix[computatedRow][computatedCollumn];
-        }
-    }
-    sum -= matrix[row][collumn];
-    return sum;
-}
-
 int main(int argc, char **argv)
 {
+
     int **initialMatrix = NULL;
     int **computedMatrix;
     int row = atoi(argv[1]);
@@ -158,16 +160,7 @@ int main(int argc, char **argv)
         computedMatrix[i] = (int *)malloc(sizeof(int) * collumn);
     }
     struct stat file_existence;
-    if (stat(argv[4], &file_existence) != 0)
-    {
-        printf("No such file");
-    }
-    if (!S_ISREG(file_existence.st_mode))
-    {
-        printf("No .txt file");
-    }
     initialMatrix = createMatrix(row, collumn, initialMatrix, argv[4]);
-
     int flag = 0;
     clock_t t;
     t = clock();
@@ -197,7 +190,8 @@ int main(int argc, char **argv)
         finalMatrix = computedMatrix;
     }
 
-    printMatrix(finalMatrix, row, collumn);
+    //printMatrix(finalMatrix, row, collumn);
     printToFile(finalMatrix, row, collumn, episodes, time_taken);
     return 0;
+ 
 }
